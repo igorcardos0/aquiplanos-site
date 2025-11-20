@@ -1,13 +1,6 @@
-/**
- * Script Standalone de Tracking
- * Pode ser injetado em qualquer página HTML
- * Versão standalone que não depende do Next.js
- */
-
 (function() {
   'use strict';
 
-  // Configuração padrão (pode ser sobrescrita)
   const DEFAULT_CONFIG = {
     apiEndpoint: '/api/events',
     apiKey: '',
@@ -17,21 +10,14 @@
     timeThresholds: [10, 30, 60],
   };
 
-  // Estado global
   let config = { ...DEFAULT_CONFIG };
   let initialized = false;
   let sessionId = null;
 
-  /**
-   * Gera ID único
-   */
   function generateId() {
     return Date.now() + '-' + Math.random().toString(36).substr(2, 9);
   }
 
-  /**
-   * Obtém session ID
-   */
   function getSessionId() {
     if (!sessionId) {
       sessionId = sessionStorage.getItem('tracking_session_id');
@@ -43,9 +29,6 @@
     return sessionId;
   }
 
-  /**
-   * Cria evento normalizado
-   */
   function createEvent(type, name, options = {}) {
     return {
       id: generateId(),
@@ -75,15 +58,11 @@
     };
   }
 
-  /**
-   * Envia evento para API
-   */
   function sendEvent(event) {
     if (!config.enabled || !config.apiEndpoint) {
       return;
     }
 
-    // Envia para adapters primeiro (se disponíveis)
     if (window.fbq && typeof window.fbq === 'function') {
       try {
         window.fbq('track', event.name || 'CustomEvent', {
@@ -107,7 +86,6 @@
       }
     }
 
-    // Envia para backend API
     fetch(config.apiEndpoint, {
       method: 'POST',
       headers: {
@@ -122,13 +100,9 @@
       if (config.debug) {
         console.warn('Erro ao enviar evento:', error);
       }
-      // Em produção, poderia usar IndexedDB para fila offline
     });
   }
 
-  /**
-   * Rastreia clique
-   */
   function trackClick(element) {
     const event = createEvent('click', 'button_click', {
       category: 'interaction',
@@ -144,9 +118,6 @@
     sendEvent(event);
   }
 
-  /**
-   * Rastreia scroll
-   */
   let scrollTracked = {};
   function trackScroll() {
     const windowHeight = window.innerHeight;
@@ -172,9 +143,6 @@
     });
   }
 
-  /**
-   * Rastreia tempo na página
-   */
   let timeTracked = {};
   function trackTime() {
     config.timeThresholds.forEach(function(threshold) {
@@ -197,30 +165,23 @@
     });
   }
 
-  /**
-   * Inicializa tracking
-   */
   function init(userConfig) {
     if (initialized) {
       if (config.debug) console.warn('Tracker já inicializado');
       return;
     }
 
-    // Mescla configuração
     config = Object.assign({}, DEFAULT_CONFIG, userConfig || {});
 
     if (!config.enabled) {
       return;
     }
 
-    // Rastreia pageview
     const pageviewEvent = createEvent('page_view', 'page_view', {
       label: window.location.pathname,
     });
     sendEvent(pageviewEvent);
 
-    // Auto-trackers
-    // Cliques
     document.addEventListener('click', function(e) {
       const target = e.target;
       if (target.closest('[data-track-ignore]')) {
@@ -233,13 +194,10 @@
       }
     });
 
-    // Scroll
     window.addEventListener('scroll', trackScroll, { passive: true });
 
-    // Tempo
     trackTime();
 
-    // Formulários
     document.addEventListener('submit', function(e) {
       const form = e.target;
       if (form.tagName === 'FORM') {
@@ -261,7 +219,6 @@
     }
   }
 
-  // API pública
   window.TrackingSystem = {
     init: init,
     track: function(name, options) {
@@ -276,7 +233,6 @@
     },
   };
 
-  // Auto-inicializa se config estiver disponível
   if (window.TRACKING_CONFIG) {
     init(window.TRACKING_CONFIG);
   }

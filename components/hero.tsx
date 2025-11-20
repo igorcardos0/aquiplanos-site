@@ -7,14 +7,12 @@ export default function Hero() {
   const router = useRouter()
 
   const handleWhatsApp = () => {
-    // Tracking de clique no WhatsApp
     trackConversion("whatsapp_click", {
       category: "conversion",
       label: "hero_whatsapp_button",
       value: 1,
     })
 
-    // Redireciona para página de obrigado (que depois redireciona para WhatsApp)
     router.push("/obrigado?source=whatsapp")
   }
 
@@ -25,7 +23,6 @@ export default function Hero() {
 
   return (
     <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 gradient-primary text-white relative overflow-hidden">
-      {/* Background decorative element */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -mr-48 -mt-48" />
 
       <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center relative z-10">
@@ -56,15 +53,14 @@ export default function Hero() {
           </div>
         </div>
 
-{/* Image placeholder */}
-<div className="hidden md:block relative h-full">
-  <Image
-    src="/images/design-mode/pessoas.webp" // <-- CORREÇÃO AQUI
-    alt="Equipe de RH"
-    fill
-    className="rounded-2xl shadow-2xl object-cover"
-  />
-</div>
+        <div className="hidden md:block relative h-full">
+          <Image
+            src="/images/design-mode/pessoas.webp"
+            alt="Equipe de RH"
+            fill
+            className="rounded-2xl shadow-2xl object-cover"
+          />
+        </div>
       </div>
     </section>
   )

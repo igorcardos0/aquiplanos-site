@@ -27,7 +27,6 @@ export default function Footer() {
     <footer className="bg-[#004fd7] text-white py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="grid md:grid-cols-3 gap-8 mb-12">
-          {/* Brand - Logo com altura atualizada */}
           <div>
             <Image
               src="/images/design-mode/logobranca.png"
@@ -38,7 +37,6 @@ export default function Footer() {
             />
           </div>
 
-          {/* Contact */}
           <div>
             <h4 className="font-semibold mb-4">Contato</h4>
             <div className="space-y-3">
@@ -60,7 +58,6 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Legal */}
           <div>
             <h4 className="font-semibold mb-4">Legal</h4>
             <div className="space-y-2">
@@ -74,7 +71,6 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Divider */}
         <div className="border-t border-white/20 py-8">
           <p className="text-center text-white/70 text-xs mb-4">
             AQUI PLANOS CORRETAGEM DE SEGUROS LTDA | CNPJ: 55.329.214/0001-06 | SUSEP: 242158825
@@ -83,18 +79,15 @@ export default function Footer() {
             © 2025 Aqui Planos. Todos os direitos reservados.
           </p>
 
-          {/* ===== ASSINATURA DO DESENVOLVEDOR (Versão Fundo Preto) ===== */}
           <div className="flex justify-center mt-8">
             <Image
-              src="/images/design-mode/v4.png" // <-- ATUALIZE ESTE CAMINHO
+              src="/images/design-mode/v4.png"
               alt="Projeto Desenvolvido por V4 Rosolen Veronze & Co."
-              width={250} // Largura base
-              height={45} // Altura base
-              className="w-auto h-10" // Imagem com 40px de altura
+              width={250}
+              height={45}
+              className="w-auto h-10"
             />
           </div>
-          {/* ========================================================== */}
-          
         </div>
       </div>
     </footer>

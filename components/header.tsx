@@ -12,27 +12,23 @@ export default function Header() {
   const isObrigadoPage = pathname === '/obrigado'
 
   const scrollToSection = (id: string) => {
-    // Se estiver na página de obrigado, redireciona para home com hash
     if (isObrigadoPage) {
       router.push(`/#${id}`)
       setIsOpen(false)
       return
     }
 
-    // Se estiver na home, faz scroll suave
     const element = document.getElementById(id)
     if (element) {
       element.scrollIntoView({ behavior: "smooth" })
       setIsOpen(false)
     } else {
-      // Se o elemento não existir, tenta navegar com hash
       router.push(`/#${id}`)
       setIsOpen(false)
     }
   }
 
   const scrollToTop = () => {
-    // Se estiver na página de obrigado, redireciona para home
     if (isObrigadoPage) {
       router.push('/')
       return
@@ -43,7 +39,6 @@ export default function Header() {
   return (
     <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-        {/* Logo */}
         <button onClick={scrollToTop} className="flex items-center gap-2 hover:opacity-80 transition">
           <Image
             src="/images/design-mode/logocolorida.webp"
@@ -54,7 +49,6 @@ export default function Header() {
           />
         </button>
 
-        {/* Desktop Menu */}
         <nav className="hidden md:flex items-center gap-8">
           <button
             onClick={() => scrollToSection("beneficios")}
@@ -88,14 +82,12 @@ export default function Header() {
           </button>
         </nav>
 
-        {/* CTA Button */}
         <div className="hidden md:block">
           <button onClick={() => scrollToSection("formulario")} className="btn-gradient px-6 py-2 cursor-pointer">
             Solicitar Cotação
           </button>
         </div>
 
-        {/* Mobile Menu Button */}
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="md:hidden text-[#004fd7] hover:text-[#06b28c] cursor-pointer transition"
@@ -104,7 +96,6 @@ export default function Header() {
         </button>
       </div>
 
-      {/* Mobile Menu */}
       {isOpen && (
         <div className="md:hidden bg-white border-t border-gray-200">
           <nav className="flex flex-col gap-4 p-4">

@@ -1,10 +1,5 @@
 "use client";
 
-/**
- * TrackingProvider - Provider React para o sistema de tracking
- * Substitui/estende o AnalyticsProvider existente
- */
-
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Script from 'next/script';
@@ -24,7 +19,6 @@ export function TrackingProvider({ children }: TrackingProviderProps) {
   const initializedRef = useRef(false);
   const trackerRef = useRef<any>(null);
 
-  // Inicializa o tracker uma vez
   useEffect(() => {
     if (initializedRef.current || typeof window === 'undefined') {
       return;
@@ -32,7 +26,6 @@ export function TrackingProvider({ children }: TrackingProviderProps) {
 
     const initializeTracking = async () => {
       try {
-        // Cria configuração com IDs do ambiente
         const config = {
           ...trackingConfig,
           adapters: {
@@ -48,11 +41,9 @@ export function TrackingProvider({ children }: TrackingProviderProps) {
           },
         };
 
-        // Inicializa tracker
         const tracker = await initTracker(config);
         trackerRef.current = tracker;
 
-        // Registra adapters
         if (config.adapters.metaPixel?.enabled && FB_PIXEL_ID) {
           tracker.registerAdapter(new MetaPixelAdapter());
         }
@@ -78,13 +69,11 @@ export function TrackingProvider({ children }: TrackingProviderProps) {
     initializeTracking();
   }, []);
 
-  // Rastreia mudanças de página
   useEffect(() => {
     if (!initializedRef.current || !trackerRef.current) {
       return;
     }
 
-    // Pequeno delay para garantir que a página carregou
     const timer = setTimeout(() => {
       trackerRef.current?.pageview({
         path: pathname,
@@ -99,7 +88,6 @@ export function TrackingProvider({ children }: TrackingProviderProps) {
     <>
       {children}
 
-      {/* Scripts de terceiros (mantém compatibilidade com código existente) */}
       {GA_ID && (
         <>
           <Script

@@ -10,10 +10,7 @@ function AnalyticsContent({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const [loaded, setLoaded] = useState(false);
 
-  // 1. Rastreamento de PageView (Mudança de Rota)
   useEffect(() => {
-    // Verifica se o FBQ já existe (carregado pelo script abaixo)
-    // Só executa no cliente após a hidratação
     if (loaded && typeof window !== "undefined") {
       console.log(`📊 PageView disparado em: ${pathname}`);
       fbEvent("PageView");
@@ -24,9 +21,7 @@ function AnalyticsContent({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, searchParams, loaded]);
 
-  // 2. Timer de Engajamento (10s e 30s)
   useEffect(() => {
-    // Só executa no cliente após a hidratação
     if (!loaded || typeof window === "undefined") return;
 
     const timer10 = setTimeout(() => {
@@ -51,7 +46,6 @@ function AnalyticsContent({ children }: { children: React.ReactNode }) {
     <>
       {children}
 
-      {/* GOOGLE ANALYTICS 4 */}
       {GA_ID && (
         <>
           <Script
@@ -74,9 +68,6 @@ function AnalyticsContent({ children }: { children: React.ReactNode }) {
         </>
       )}
 
-      {/* FACEBOOK PIXEL (MÉTODO CLÁSSICO DE INJEÇÃO) */}
-      {/* Isso garante que o 'fbq' é criado ANTES do arquivo fbevents.js baixar */}
-      {/* Desabilita em localhost para evitar avisos de permissão */}
       {FB_PIXEL_ID && (
           <Script
             id="fb-pixel"
@@ -86,7 +77,6 @@ function AnalyticsContent({ children }: { children: React.ReactNode }) {
               (function() {
                 if (typeof window === 'undefined' || typeof document === 'undefined') return;
                 
-                // Desabilita Meta Pixel em localhost para evitar avisos de permissão
                 if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                   console.log('⚠️ Meta Pixel desabilitado em localhost (normal - funciona apenas em produção)');
                   return;
@@ -109,8 +99,6 @@ function AnalyticsContent({ children }: { children: React.ReactNode }) {
             `,
             }}
             onLoad={() => {
-              // Marca como carregado para ativar os efeitos do useEffect
-              // Só marca se estiver no cliente
               if (typeof window !== "undefined") {
                 setLoaded(true);
                 console.log("✅ Pixel do Facebook Iniciado (Método Injeção)");

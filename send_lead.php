@@ -1,31 +1,44 @@
 <?php
-// ================================================
-// SCRIPT DE ENVIO DE LEAD - AQUI PLANOS
-// ================================================
-
-// 1. CONFIGURAÇÕES DE CORS (Cross-Origin Resource Sharing)
-// Permite que seu site React (o 'frontend') se comunique com este script.
-// Se souber o domínio exato do seu site (ex: https://www.aquiplanos.com.br),
-// é mais seguro colocá-lo no lugar do "*".
+// Configuração SMTP: credenciais devem estar em config.php (não commitado) ou variáveis de ambiente
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST, OPTIONS"); // Permite POST e a checagem OPTIONS
-header("Access-Control-Allow-Headers: Content-Type"); // Permite o header Content-Type
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
 header("Content-Type: application/json; charset=UTF-8");
 
-// O navegador envia uma requisição "OPTIONS" antes do "POST" para checar o CORS.
-// Este bloco responde "OK" para essa checagem.
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     http_response_code(200);
     exit;
 }
 
-// 2. INCLUIR A BIBLIOTECA PHPMailer
-// IMPORTANTE: Isso assume que você criou uma pasta "phpmailer" e
-// colocou os arquivos da biblioteca PHPMailer dentro dela, no subdiretório "src".
+// Carrega configurações do arquivo config.php ou usa variáveis de ambiente
+$configFile = __DIR__ . '/config.php';
+if (file_exists($configFile)) {
+    $config = require $configFile;
+    define('EMAIL_USER', $config['EMAIL_USER'] ?? '');
+    define('EMAIL_PASS', $config['EMAIL_PASS'] ?? '');
+    define('SMTP_HOST', $config['SMTP_HOST'] ?? '');
+    define('SMTP_PORT', $config['SMTP_PORT'] ?? 465);
+    define('SMTP_SECURE', $config['SMTP_SECURE'] ?? 'ssl');
+    define('EMAIL_DESTINATARIO', $config['EMAIL_DESTINATARIO'] ?? 'igor.souza@v4company.com');
+} else {
+    // Fallback para variáveis de ambiente (útil para servidores que suportam)
+    define('EMAIL_USER', getenv('SMTP_USER') ?: '');
+    define('EMAIL_PASS', getenv('SMTP_PASS') ?: '');
+    define('SMTP_HOST', getenv('SMTP_HOST') ?: '');
+    define('SMTP_PORT', (int)(getenv('SMTP_PORT') ?: 465));
+    define('SMTP_SECURE', getenv('SMTP_SECURE') ?: 'ssl');
+    define('EMAIL_DESTINATARIO', getenv('EMAIL_DESTINATARIO') ?: 'igor.souza@v4company.com');
+}
 
-// PRIMEIRO: Require os arquivos (precisa carregar as classes antes de usar "use")
-// Usa __DIR__ para garantir que funciona independente de onde o script está sendo executado
-// Tenta múltiplos caminhos caso a estrutura esteja diferente
+// Valida se as configurações essenciais estão definidas
+if (empty(EMAIL_USER) || empty(EMAIL_PASS) || empty(SMTP_HOST)) {
+    http_response_code(500);
+    echo json_encode([
+        "success" => false,
+        "message" => "Erro: Configurações SMTP não encontradas. Crie o arquivo config.php baseado em config.example.php"
+    ]);
+    exit;
+}
 
 $phpmailerPaths = [
     __DIR__ . '/phpmailer/src/Exception.php',
@@ -54,45 +67,27 @@ require $phpmailerBasePath . '/Exception.php';
 require $phpmailerBasePath . '/PHPMailer.php';
 require $phpmailerBasePath . '/SMTP.php';
 
-// DEPOIS: Use as classes (após os arquivos serem carregados)
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\SMTP;
 
-// 3. CONFIGURAÇÃO DO SERVIDOR/EMAIL (O "CARTEIRO")
-// CONFIGURAÇÕES CONFIRMADAS DO CPANEL:
-// - Servidor SMTP: mail.aquiplanos.com.br
-// - Porta SMTP: 465 (SSL)
-// - Username: email completo (leadsaquiplanos@aquiplanos.com.br)
-// - Requer autenticação: Sim
-// - Senha: Configurada abaixo
-define('EMAIL_USER', 'leadsaquiplanos@aquiplanos.com.br');
-define('EMAIL_PASS', 'i%BR7@py{mMx-8W_'); // Senha do email configurada no cPanel
-define('SMTP_HOST', 'mail.aquiplanos.com.br'); // Servidor de saída confirmado no cPanel
-define('SMTP_PORT', 465); // Porta 465 (SSL) conforme cPanel
-define('SMTP_SECURE', 'ssl'); // SSL para porta 465 conforme cPanel
-
-// 4. COLETAR E VALIDAR DADOS
 if ($_SERVER["REQUEST_METHOD"] != "POST") {
     http_response_code(405);
     echo json_encode(["success" => false, "message" => "Método não permitido."]);
     exit;
 }
 
-// Pega os dados JSON enviados pelo formulário React
 $rawInput = file_get_contents("php://input");
 $data = json_decode($rawInput, true);
 
-// Log para debug (remover em produção)
 error_log("📥 Dados recebidos: " . $rawInput);
 
-// Verificar se conseguiu decodificar o JSON
 if (json_last_error() !== JSON_ERROR_NONE) {
     http_response_code(400);
     echo json_encode([
         "success" => false, 
         "message" => "Erro ao processar dados: " . json_last_error_msg(),
-        "raw" => substr($rawInput, 0, 200) // Primeiros 200 caracteres para debug
+        "raw" => substr($rawInput, 0, 200)
     ]);
     exit;
 }
@@ -102,12 +97,11 @@ if (empty($data['nome']) || empty($data['email']) || empty($data['telefone']) ||
     echo json_encode([
         "success" => false, 
         "message" => "Por favor, preencha os campos obrigatórios.",
-        "received_data" => array_keys($data) // Mostra quais campos foram recebidos
+        "received_data" => array_keys($data)
     ]);
     exit;
 }
 
-// Sanitização (limpeza) dos dados
 $nome = htmlspecialchars($data['nome'] ?? 'Não informado');
 $empresa = htmlspecialchars($data['empresa'] ?? 'Não informada');
 $cargo = htmlspecialchars($data['cargo'] ?? 'Não informado');
@@ -117,8 +111,6 @@ $vidas = htmlspecialchars($data['vidas'] ?? 'Não informado');
 $cnpj = htmlspecialchars($data['cnpj'] ?? 'Não informado');
 $operadora = htmlspecialchars($data['operadora'] ?? 'Nenhuma');
 
-
-// 5. MONTAR O CONTEÚDO DO EMAIL
 $subject = "⭐ NOVO LEAD: Cotação - {$empresa} ({$vidas} vidas)";
 
 $body = "
@@ -150,13 +142,10 @@ $body = "
 ";
 
 
-// 6. ENVIAR O EMAIL COM PHPMailer
-// Função auxiliar para tentar enviar com uma configuração específica
 function tentarEnviarEmail($config) {
     $mail = new PHPMailer(true);
     
     try {
-        // Configurações do SMTP
         $mail->isSMTP();
         $mail->Host = $config['host'];
         $mail->SMTPAuth = true;
@@ -166,7 +155,6 @@ function tentarEnviarEmail($config) {
         $mail->Port = $config['port'];
         $mail->CharSet = 'UTF-8';
         
-        // Opções SSL/TLS para resolver problemas de autenticação
         $mail->SMTPOptions = array(
             'ssl' => array(
                 'verify_peer' => false,
@@ -180,22 +168,17 @@ function tentarEnviarEmail($config) {
             )
         );
         
-        // Debug HABILITADO para capturar erros detalhados
-        // Os logs vão para o error_log do PHP
-        $mail->SMTPDebug = 2; // Nível 2 = mostra conexão e comandos SMTP
+        $mail->SMTPDebug = 2;
         $mail->Debugoutput = function($str, $level) {
-            // Salva debug em arquivo e também retorna na resposta
             error_log("PHPMailer Debug [$level]: $str");
-            // Armazena para retornar ao usuário
             if (!isset($GLOBALS['smtp_debug_log'])) {
                 $GLOBALS['smtp_debug_log'] = [];
             }
             $GLOBALS['smtp_debug_log'][] = trim($str);
         };
 
-        // Configurar email
         $mail->setFrom($config['from_email'], 'Formulário Aqui Planos');
-        $mail->addAddress('igor.souza@v4company.com');
+        $mail->addAddress(EMAIL_DESTINATARIO);
         $mail->addReplyTo($config['reply_to'], $config['reply_to_name']);
         $mail->isHTML(true);
         $mail->Subject = $config['subject'];
@@ -207,10 +190,8 @@ function tentarEnviarEmail($config) {
     } catch (Exception $e) {
         $errorMsg = $mail->ErrorInfo ?: $e->getMessage();
         
-        // Adiciona informações de diagnóstico específicas
         $diagnostico = [];
         
-        // Verificar se é erro de autenticação
         if (stripos($errorMsg, 'authenticate') !== false || stripos($errorMsg, 'authentication') !== false) {
             $diagnostico[] = "AUTENTICAÇÃO FALHOU - Verifique:";
             $diagnostico[] = "1. Senha do email no cPanel (pode estar incorreta ou expirada)";
@@ -218,26 +199,22 @@ function tentarEnviarEmail($config) {
             $diagnostico[] = "3. Conta de email ativa e não bloqueada";
         }
         
-        // Adiciona logs de debug se disponíveis
         if (isset($GLOBALS['smtp_debug_log']) && !empty($GLOBALS['smtp_debug_log'])) {
-            $debugInfo = implode(' | ', array_slice($GLOBALS['smtp_debug_log'], -3)); // Últimas 3 linhas
+            $debugInfo = implode(' | ', array_slice($GLOBALS['smtp_debug_log'], -3));
             $errorMsg .= ' | Debug: ' . $debugInfo;
             unset($GLOBALS['smtp_debug_log']);
         }
         
-        // Adiciona diagnóstico
         if (!empty($diagnostico)) {
             $errorMsg .= ' | ' . implode(' | ', $diagnostico);
         }
         
-        // Adiciona informações da configuração tentada
         $errorMsg .= ' | Config testada: ' . $config['host'] . ':' . $config['port'] . ' (' . $config['secure'] . ')';
         
         return ['success' => false, 'message' => $errorMsg];
     }
 }
 
-// Preparar dados do email
 $emailConfig = [
     'subject' => $subject,
     'body' => $body,
@@ -246,19 +223,14 @@ $emailConfig = [
     'reply_to_name' => $nome,
 ];
 
-// Lista de configurações para tentar (na ordem de prioridade)
-// PRIMEIRO: Configuração exata do cPanel (porta 465 SSL com email completo)
-// DEPOIS: Alternativas caso a primeira não funcione
 $configuracoes = [
-    // Configuração 1: EXATA DO CPANEL - Porta 465 SSL com email completo
     [
         'host' => SMTP_HOST,
-        'username' => EMAIL_USER, // Email completo conforme cPanel
+        'username' => EMAIL_USER,
         'password' => EMAIL_PASS,
         'secure' => 'ssl',
         'port' => 465,
     ],
-    // Configuração 2: Porta 587 TLS (alternativa comum)
     [
         'host' => SMTP_HOST,
         'username' => EMAIL_USER,
@@ -266,17 +238,15 @@ $configuracoes = [
         'secure' => 'tls',
         'port' => 587,
     ],
-    // Configuração 3: Porta 465 SSL com username simples (caso servidor aceite)
     [
         'host' => SMTP_HOST,
-        'username' => 'leadsaquiplanos', // Apenas username (sem @)
+        'username' => 'leadsaquiplanos',
         'password' => EMAIL_PASS,
         'secure' => 'ssl',
         'port' => 465,
     ],
 ];
 
-// Tentar cada configuração até uma funcionar
 $resultado = null;
 $ultimoErro = '';
 
@@ -293,22 +263,17 @@ foreach ($configuracoes as $config) {
     $ultimoErro = $resultado['message'];
 }
 
-// Se nenhuma configuração funcionou, retornar erro detalhado
 http_response_code(500);
 
-// Mensagem de erro mais detalhada
 $erroFinal = "Erro ao enviar: " . $ultimoErro;
 
-// Adicionar instruções de solução
 $erroFinal .= "\n\n🔧 SOLUÇÃO RECOMENDADA:\n";
 $erroFinal .= "1. Acesse o cPanel → Email Accounts\n";
-$erroFinal .= "2. Encontre: leadsaquiplanos@aquiplanos.com.br\n";
-$erroFinal .= "3. Clique em 'Alterar Senha' ou 'Change Password'\n";
-$erroFinal .= "4. Defina uma senha nova e simples (sem caracteres especiais)\n";
-$erroFinal .= "5. Atualize a senha na linha 70 do send_lead.php\n";
-$erroFinal .= "6. Teste novamente\n\n";
+$erroFinal .= "2. Verifique as credenciais do email\n";
+$erroFinal .= "3. Atualize o arquivo config.php com as credenciais corretas\n";
+$erroFinal .= "4. Certifique-se de que config.php existe e está configurado corretamente\n";
+$erroFinal .= "5. Teste novamente\n\n";
 
-// Verificações adicionais
 $verificacoes = [];
 if (EMAIL_PASS === '[Pl@#25@nos]') {
     $verificacoes[] = "⚠️ Senha padrão detectada - VERIFIQUE SE A SENHA ESTÁ CORRETA NO CPANEL";

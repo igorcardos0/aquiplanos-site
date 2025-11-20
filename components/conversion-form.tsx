@@ -66,9 +66,7 @@ export default function ConversionForm() {
  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // **IMPORTANTE:** Este é o URL do arquivo PHP no seu servidor cPanel
-const PHP_ENDPOINT = "https://app.aquiplanos.com.br/send_lead.php"
-    // Certifique-se de que o domínio e o caminho estão corretos!
+    const PHP_ENDPOINT = "https://app.aquiplanos.com.br/send_lead.php"
 
     console.log("📤 Enviando dados do formulário:", formData)
 
@@ -78,7 +76,6 @@ const PHP_ENDPOINT = "https://app.aquiplanos.com.br/send_lead.php"
         headers: {
           "Content-Type": "application/json",
         },
-        // Converte o estado do formulário para JSON e envia
         body: JSON.stringify(formData), 
       })
 
@@ -88,7 +85,6 @@ const PHP_ENDPOINT = "https://app.aquiplanos.com.br/send_lead.php"
         headers: Object.fromEntries(response.headers.entries())
       })
 
-      // Verificar se a resposta é JSON válido
       const contentType = response.headers.get("content-type")
       if (!contentType || !contentType.includes("application/json")) {
         const text = await response.text()
@@ -103,17 +99,14 @@ const PHP_ENDPOINT = "https://app.aquiplanos.com.br/send_lead.php"
       console.log("📋 Resultado parseado:", result)
 
       if (response.ok && result.success) {
-        // Tracking de conversão
         trackConversion("form_submit_success", {
           category: "conversion",
           label: "form_submit",
           value: 1,
         })
 
-        // Redireciona para página de obrigado
         router.push("/obrigado?source=form")
       } else {
-        // Exibe a mensagem de erro retornada pelo PHP
         console.error("❌ Erro na resposta:", result)
         alert(
           `Erro ao enviar a cotação: ${result.message || "Erro desconhecido. Tente novamente mais tarde."}`

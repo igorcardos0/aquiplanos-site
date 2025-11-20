@@ -12,14 +12,11 @@ import FAQ from "@/components/faq"
 import Footer from "@/components/footer"
 
 export default function Home() {
-  // Faz scroll automático para seções quando há hash na URL
   useEffect(() => {
     const handleHashScroll = () => {
       const hash = window.location.hash
       if (hash) {
-        // Remove o # do hash
         const id = hash.substring(1)
-        // Aguarda um pouco para garantir que o DOM está pronto
         setTimeout(() => {
           const element = document.getElementById(id)
           if (element) {
@@ -29,10 +26,8 @@ export default function Home() {
       }
     }
 
-    // Executa imediatamente se já houver hash
     handleHashScroll()
 
-    // Escuta mudanças no hash (navegação com hash)
     window.addEventListener('hashchange', handleHashScroll)
 
     return () => {
